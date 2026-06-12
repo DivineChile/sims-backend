@@ -1,7 +1,8 @@
 import express from "express";
 
 import {
-  getAssignments,
+  getAllAssignments,
+  getLecturerAssignments,
   assignCourse,
   updateAssignment,
   deleteAssignment,
@@ -9,7 +10,8 @@ import {
 
 const router = express.Router();
 
-router.get("/", getAssignments);
+router.get("/", getAllAssignments);
+router.get("/lecturer/:userId", getLecturerAssignments);
 router.post("/", assignCourse);
 router.put("/:id", updateAssignment);
 router.delete("/:id", deleteAssignment);

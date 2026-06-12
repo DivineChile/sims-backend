@@ -8,8 +8,16 @@ export const getStudents = async (_, res) => {
       id,
       matric_number,
       level,
-      users(full_name, email),
-      departments(name)
+      department_id,
+      users (
+        id,
+        full_name,
+        email
+      ),
+      departments (
+        id,
+        name
+      )
     `);
 
   if (error) {
@@ -19,6 +27,36 @@ export const getStudents = async (_, res) => {
   }
 
   res.json(data);
+};
+
+// GET CURRENT STUDENT
+export const getCurrentStudent = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } =
+      await supabaseAdmin
+        .from("students")
+        .select(`
+          *,
+          departments(name)
+        `)
+        .eq("user_id", userId)
+        .single();
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
 };
 
 export const createStudent = async (req, res) => {

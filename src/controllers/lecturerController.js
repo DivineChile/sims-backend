@@ -6,12 +6,15 @@ export const getLecturers = async (_, res) => {
     .from("lecturers")
     .select(`
       id,
+      user_id,
       department_id,
       users (
+        id,
         full_name,
         email
       ),
       departments (
+        id,
         name
       )
     `);
@@ -180,4 +183,91 @@ export const deleteLecturer = async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
 
   res.json({ message: "Lecturer deactivated" });
+};
+
+// GET LECTURER DASHBOARD DATA
+export const getLecturerDashboard = async (req, res) => {
+  try {
+    const { lecturerId } = req.params;
+
+    // 1. Assigned courses
+    const { data: assignments, error: assignError } =
+      await supabaseAdmin
+        .from("course_assignments")
+        .select(`
+          id,
+          course_id,
+          courses (
+            id,
+            course_code,
+            title,
+            unit
+          ),
+          session_id
+        `)
+        .eq("lecturer_id", lecturerId);
+
+    if (assignError) {
+      return res.status(400).json({ error: assignError.message });
+    }
+
+    // 2. Active sessions
+    const { data: sessions } =
+      await supabaseAdmin
+        .from("attendance_sessions")
+        .select(`
+          id,
+          session_date,
+          course_id,
+          courses (course_code)
+        `)
+        .eq("lecturer_id", lecturerId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+    // 3. Get ALL courses taught by lecturer
+    const courseIds = assignments.map(a => a.course_id);
+
+    // 4. Get registrations separately (SAFE WAY)
+    const { data: registrations } =
+      await supabaseAdmin
+        .from("course_registrations")
+        .select("student_id, course_id")
+        .in("course_id", courseIds);
+
+    // 5. Unique students count
+    const uniqueStudents = new Set(
+      registrations?.map(r => r.student_id) || []
+    );
+
+    res.json({
+      courses: assignments,
+      sessions,
+      totalStudents: uniqueStudents.size,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getLecturerByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabaseAdmin
+      .from("lecturers")
+      .select("id")
+      .eq("user_id", userId)
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

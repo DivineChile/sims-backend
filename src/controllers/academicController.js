@@ -39,7 +39,6 @@ export const getActiveSemester = async (_, res) => {
   res.json(data);
 };
 
-
 // =============================
 // ACADEMIC SESSIONS (NEW)
 // =============================

@@ -11,6 +11,7 @@ import academicRoutes from "./routes/academicRoutes.js";
 import semesterRoutes from "./routes/semesterRoutes.js";
 import courseRegistrationRoutes from "./routes/courseRegistrationRoutes.js";
 import courseAssignmentRoutes from "./routes/courseAssignmentRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/academic", academicRoutes);
 app.use("/api/semesters", semesterRoutes);
 app.use("/api/course-assignments", courseAssignmentRoutes);
+app.use("/api/attendance", attendanceRoutes);
 
 export default app;

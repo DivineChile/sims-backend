@@ -4,7 +4,7 @@ import { supabaseAdmin } from "../config/supabaseAdmin.js";
 // =============================
 // GET ALL ASSIGNMENTS
 // =============================
-export const getAssignments = async (_, res) => {
+export const getAllAssignments = async (_, res) => {
   const { data, error } = await supabaseAdmin
     .from("course_assignments")
     .select(`
@@ -30,6 +30,58 @@ export const getAssignments = async (_, res) => {
   res.json(data);
 };
 
+// =============================
+// GET LECTURER ASSIGNED COURSES
+// =============================
+export const getLecturerAssignments = async (req, res) => {
+  const { userId } = req.params;
+
+  // 1. Resolve lecturer profile
+  const { data: lecturer, error: lecError } =
+    await supabaseAdmin
+      .from("lecturers")
+      .select("id")
+      .eq("user_id", userId)
+      .single();
+
+  if (lecError) {
+    return res.status(400).json({
+      error: "Lecturer profile not found",
+    });
+  }
+
+  const lecturerId = lecturer.id;
+
+  // 2. Fetch assignments using lecturer.id
+  const { data, error } = await supabaseAdmin
+    .from("course_assignments")
+    .select(`
+      id,
+      course_id,
+      lecturer_id,
+      session_id,
+      courses (
+        id,
+        course_code,
+        title,
+        unit,
+        level
+      ),
+      academic_sessions (
+        id,
+        name
+      )
+    `)
+    .eq("lecturer_id", lecturerId);
+
+  if (error) {
+    return res.status(400).json({
+      error: error.message,
+    });
+  }
+
+  res.json(data);
+};
 
 // =============================
 // CREATE ASSIGNMENT
