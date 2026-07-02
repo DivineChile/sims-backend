@@ -2,9 +2,7 @@ import { supabaseAdmin } from "../config/supabaseAdmin.js";
 
 // GET ALL LECTURERS
 export const getLecturers = async (_, res) => {
-  const { data, error } = await supabaseAdmin
-    .from("lecturers")
-    .select(`
+  const { data, error } = await supabaseAdmin.from("lecturers").select(`
       id,
       user_id,
       department_id,
@@ -31,12 +29,7 @@ export const getLecturers = async (_, res) => {
 // CREATE
 export const createLecturer = async (req, res) => {
   try {
-    const {
-      full_name,
-      email,
-      password,
-      department_id,
-    } = req.body;
+    const { full_name, email, password, department_id } = req.body;
 
     // ─────────────────────────────
     // 1. CREATE AUTH USER
@@ -59,14 +52,12 @@ export const createLecturer = async (req, res) => {
     // ─────────────────────────────
     // 2. CREATE PROFILE (users table)
     // ─────────────────────────────
-    const { error: userError } = await supabaseAdmin
-      .from("users")
-      .insert({
-        id: userId,
-        full_name,
-        email,
-        role: "lecturer",
-      });
+    const { error: userError } = await supabaseAdmin.from("users").insert({
+      id: userId,
+      full_name,
+      email,
+      role: "lecturer",
+    });
 
     if (userError) {
       return res.status(400).json({
@@ -94,7 +85,6 @@ export const createLecturer = async (req, res) => {
       message: "Lecturer created successfully",
       user_id: userId,
     });
-
   } catch (err) {
     res.status(500).json({
       error: err.message,
@@ -107,19 +97,14 @@ export const updateLecturer = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const {
-      full_name,
-      email,
-      department_id,
-    } = req.body;
+    const { full_name, email, department_id } = req.body;
 
     // 1. Get lecturer → resolve user_id
-    const { data: lecturer, error: fetchError } =
-      await supabaseAdmin
-        .from("lecturers")
-        .select("user_id")
-        .eq("id", id)
-        .single();
+    const { data: lecturer, error: fetchError } = await supabaseAdmin
+      .from("lecturers")
+      .select("user_id")
+      .eq("id", id)
+      .single();
 
     if (fetchError || !lecturer) {
       return res.status(404).json({
@@ -163,7 +148,6 @@ export const updateLecturer = async (req, res) => {
     res.json({
       message: "Lecturer updated successfully",
     });
-
   } catch (err) {
     res.status(500).json({
       error: err.message,
@@ -191,10 +175,10 @@ export const getLecturerDashboard = async (req, res) => {
     const { lecturerId } = req.params;
 
     // 1. Assigned courses
-    const { data: assignments, error: assignError } =
-      await supabaseAdmin
-        .from("course_assignments")
-        .select(`
+    const { data: assignments, error: assignError } = await supabaseAdmin
+      .from("course_assignments")
+      .select(
+        `
           id,
           course_id,
           courses (
@@ -204,40 +188,41 @@ export const getLecturerDashboard = async (req, res) => {
             unit
           ),
           session_id
-        `)
-        .eq("lecturer_id", lecturerId);
+        `,
+      )
+      .eq("lecturer_id", lecturerId);
 
     if (assignError) {
       return res.status(400).json({ error: assignError.message });
     }
 
     // 2. Active sessions
-    const { data: sessions } =
-      await supabaseAdmin
-        .from("attendance_sessions")
-        .select(`
+    const { data: sessions } = await supabaseAdmin
+      .from("attendance_sessions")
+      .select(
+        `
           id,
           session_date,
           course_id,
           courses (course_code)
-        `)
-        .eq("lecturer_id", lecturerId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+        `,
+      )
+      .eq("lecturer_id", lecturerId)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
     // 3. Get ALL courses taught by lecturer
-    const courseIds = assignments.map(a => a.course_id);
+    const courseIds = assignments.map((a) => a.course_id);
 
     // 4. Get registrations separately (SAFE WAY)
-    const { data: registrations } =
-      await supabaseAdmin
-        .from("course_registrations")
-        .select("student_id, course_id")
-        .in("course_id", courseIds);
+    const { data: registrations } = await supabaseAdmin
+      .from("course_registrations")
+      .select("student_id, course_id")
+      .in("course_id", courseIds);
 
     // 5. Unique students count
     const uniqueStudents = new Set(
-      registrations?.map(r => r.student_id) || []
+      registrations?.map((r) => r.student_id) || [],
     );
 
     res.json({
@@ -245,7 +230,6 @@ export const getLecturerDashboard = async (req, res) => {
       sessions,
       totalStudents: uniqueStudents.size,
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -266,8 +250,65 @@ export const getLecturerByUser = async (req, res) => {
     }
 
     res.json(data);
-
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const getLecturerProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { data, error } = await supabaseAdmin
+
+      .from("lecturers")
+
+      .select(
+        `
+
+id,
+
+is_active,
+
+created_at,
+
+
+users(
+
+id,
+
+full_name,
+
+email
+
+),
+
+
+departments(
+
+id,
+
+name
+
+)
+
+`,
+      )
+
+      .eq("user_id", userId)
+
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
   }
 };

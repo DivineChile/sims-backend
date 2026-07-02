@@ -6,6 +6,7 @@ import {
   deleteLecturer,
   getLecturerDashboard,
   getLecturerByUser,
+  getLecturerProfile
 } from "../controllers/lecturerController.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.put("/:id", updateLecturer);
 router.delete("/:id", deleteLecturer);
 router.get("/dashboard/:lecturerId", getLecturerDashboard);
 router.get("/by-user/:userId", getLecturerByUser);
+router.get("/profile/:userId", getLecturerProfile);
 
 export default router;

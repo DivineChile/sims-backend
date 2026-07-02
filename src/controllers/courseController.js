@@ -23,6 +23,42 @@ export const getCourses = async (_, res) => {
   res.json(data);
 };
 
+export const getCourseById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } =
+      await supabaseAdmin
+        .from("courses")
+        .select(`
+          id,
+          course_code,
+          title,
+          unit,
+          level,
+          departments(name),
+          semesters(name)
+        `)
+        .eq("id", id)
+        .single();
+
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+};
+
 // GET AVAILABLE COURSES
 export const getAvailableCourses = async (req, res) => {
   try {
