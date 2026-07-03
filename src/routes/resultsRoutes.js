@@ -6,6 +6,7 @@ import {
   getSessionRecords,
   updateResultRecord,
   createBulkResults,
+  getStudentResults,
 } from "../controllers/resultsController.js";
 
 const router = express.Router();
@@ -16,5 +17,7 @@ router.get("/session/:sessionId/records", getSessionRecords);
 
 router.post("/submit", createBulkResults);
 router.put("/record/:id", updateResultRecord);
+
+router.get("/student/:studentId", getStudentResults);
 
 export default router;

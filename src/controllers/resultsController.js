@@ -170,3 +170,39 @@ export const createBulkResults = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+export const getStudentResults = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const { data, error } = await supabaseAdmin
+      .from("results")
+      .select(
+        `
+        id,
+        ca_score,
+        exam_score,
+        total_score,
+        grade,
+        results_session_id,
+        course:course_id (
+          course_code,
+          title,
+          unit
+        ),
+        semester:semester_id (
+          name
+        )
+      `,
+      )
+      .eq("student_id", studentId);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
