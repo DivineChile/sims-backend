@@ -1,13 +1,13 @@
 import { supabaseAdmin } from "../config/supabaseAdmin.js";
 
-
 // =============================
 // GET ALL ASSIGNMENTS
 // =============================
 export const getAllAssignments = async (_, res) => {
   const { data, error } = await supabaseAdmin
     .from("course_assignments")
-    .select(`
+    .select(
+      `
         id,
         course_id,
         lecturer_id,
@@ -20,7 +20,8 @@ export const getAllAssignments = async (_, res) => {
         ),
         academic_sessions (name),
         semesters (name)
-    `)
+    `,
+    )
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -37,12 +38,11 @@ export const getLecturerAssignments = async (req, res) => {
   const { userId } = req.params;
 
   // 1. Resolve lecturer profile
-  const { data: lecturer, error: lecError } =
-    await supabaseAdmin
-      .from("lecturers")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
+  const { data: lecturer, error: lecError } = await supabaseAdmin
+    .from("lecturers")
+    .select("id")
+    .eq("user_id", userId)
+    .single();
 
   if (lecError) {
     return res.status(400).json({
@@ -55,7 +55,8 @@ export const getLecturerAssignments = async (req, res) => {
   // 2. Fetch assignments using lecturer.id
   const { data, error } = await supabaseAdmin
     .from("course_assignments")
-    .select(`
+    .select(
+      `
       id,
       course_id,
       lecturer_id,
@@ -64,6 +65,7 @@ export const getLecturerAssignments = async (req, res) => {
         id,
         course_code,
         title,
+        semester_id,
         unit,
         level
       ),
@@ -71,7 +73,8 @@ export const getLecturerAssignments = async (req, res) => {
         id,
         name
       )
-    `)
+    `,
+    )
     .eq("lecturer_id", lecturerId);
 
   if (error) {
@@ -87,12 +90,7 @@ export const getLecturerAssignments = async (req, res) => {
 // CREATE ASSIGNMENT
 // =============================
 export const assignCourse = async (req, res) => {
-  const {
-    course_id,
-    lecturer_id,
-    session_id,
-    semester_id,
-  } = req.body;
+  const { course_id, lecturer_id, session_id, semester_id } = req.body;
 
   // prevent duplicates
   const { data: existing } = await supabaseAdmin
@@ -110,14 +108,12 @@ export const assignCourse = async (req, res) => {
     });
   }
 
-  const { error } = await supabaseAdmin
-    .from("course_assignments")
-    .insert({
-      course_id,
-      lecturer_id,
-      session_id,
-      semester_id,
-    });
+  const { error } = await supabaseAdmin.from("course_assignments").insert({
+    course_id,
+    lecturer_id,
+    session_id,
+    semester_id,
+  });
 
   if (error) {
     return res.status(400).json({ error: error.message });
@@ -129,12 +125,7 @@ export const assignCourse = async (req, res) => {
 export const updateAssignment = async (req, res) => {
   const { id } = req.params;
 
-  const {
-    course_id,
-    lecturer_id,
-    session_id,
-    semester_id,
-  } = req.body;
+  const { course_id, lecturer_id, session_id, semester_id } = req.body;
 
   // prevent duplicate conflict (excluding current record)
   const { data: existing } = await supabaseAdmin
