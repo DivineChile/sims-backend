@@ -22,6 +22,19 @@ export const createOrGetSession = async (req, res) => {
   try {
     const { course_id, lecturer_id, semester_id } = req.body;
 
+    // GET ACTIVE ACADEMIC SESSION
+    const { data: academicSession, error: sessionError } = await supabaseAdmin
+      .from("academic_sessions")
+      .select("id")
+      .eq("is_active", true)
+      .single();
+
+    if (sessionError) {
+      return res.status(400).json({
+        error: "No active academic session found",
+      });
+    }
+
     // CHECK IF SESSION EXISTS
     const { data: existing, error: fetchError } = await supabaseAdmin
       .from("results_sessions")
@@ -41,6 +54,7 @@ export const createOrGetSession = async (req, res) => {
         course_id,
         lecturer_id,
         semester_id,
+        academic_session_id: academicSession.id,
         status: "draft",
       })
       .select()
@@ -175,6 +189,22 @@ export const getStudentResults = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    // Find student profile
+
+    const { data: student, error: studentError } = await supabaseAdmin
+      .from("students")
+      .select("id")
+      .eq("user_id", studentId)
+      .single();
+
+    if (studentError) {
+      return res.status(400).json({
+        error: "Student profile not found",
+      });
+    }
+
+    const realStudentId = student.id;
+
     const { data, error } = await supabaseAdmin
       .from("results")
       .select(
@@ -184,25 +214,198 @@ export const getStudentResults = async (req, res) => {
         exam_score,
         total_score,
         grade,
-        results_session_id,
-        course:course_id (
-          course_code,
-          title,
-          unit
-        ),
-        semester:semester_id (
-          name
+
+        results_sessions!inner(
+
+          id,
+          status,
+          is_published,
+
+          courses(
+            id,
+            course_code,
+            title,
+            unit
+          ),
+
+          semesters(
+            id,
+            name
+          ),
+
+          academic_sessions(
+            id,
+            name
+          )
+
         )
       `,
       )
-      .eq("student_id", studentId);
+      .eq("student_id", realStudentId)
+      .eq("results_sessions.is_published", true);
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(400).json({
+        error: error.message,
+      });
     }
 
-    return res.json(data);
+    res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+};
+
+export const getPendingResults = async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("results_sessions")
+      .select(
+        `
+          id,
+          status,
+          is_published,
+
+          courses(
+            course_code,
+            title,
+            unit
+          ),
+
+          lecturers(
+            id,
+            users(
+              full_name
+            )
+          ),
+
+          academic_sessions(
+            name
+          ),
+
+          semesters(
+            name
+          )
+        `,
+      )
+      .eq("status", "draft");
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+};
+
+export const getResultSessionDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabaseAdmin
+      .from("results")
+      .select(
+        `
+ id,
+ ca_score,
+ exam_score,
+ total_score,
+ grade,
+
+ students(
+   matric_number,
+
+   users(
+     full_name
+   )
+ ),
+
+ results_sessions!inner(
+
+ courses(
+   course_code,
+   title
+ ),
+
+ semesters(
+   name
+ ),
+
+ academic_sessions(
+   name
+ )
+
+ )
+`,
+      )
+      .eq("results_session_id", id);
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
+  }
+};
+
+export const publishResultSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: sessionResults } = await supabaseAdmin
+      .from("results")
+      .select("id")
+      .eq("results_session_id", id);
+
+    const { data: enrolledStudents } = await supabaseAdmin
+      .from("course_registrations")
+      .select("student_id")
+      .eq("course_id", session.course_id);
+
+    if (sessionResults.length !== enrolledStudents.length) {
+      return res.status(400).json({
+        error: `Cannot publish. ${enrolledStudents.length - sessionResults.length} students have no results.`,
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("results_sessions")
+      .update({
+        status: "published",
+
+        is_published: true,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    res.json({
+      message: "Results published successfully",
+      data,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+    });
   }
 };
