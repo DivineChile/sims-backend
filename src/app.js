@@ -15,6 +15,8 @@ import attendanceRoutes from "./routes/attendanceRoutes.js";
 import feeCategoryRoutes from "./routes/feeCategoryRoutes.js";
 import studentFeeRoutes from "./routes/studentFeeRoutes.js";
 import resultsRoutes from "./routes/resultsRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
 
 const app = express();
 
@@ -36,5 +38,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/fee-categories", feeCategoryRoutes);
 app.use("/api/student-fees", studentFeeRoutes);
 app.use("/api/results", resultsRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 export default app;
